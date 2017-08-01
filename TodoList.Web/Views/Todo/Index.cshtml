@@ -1,0 +1,143 @@
+﻿<html>
+<head>
+    <meta charset="UTF-8">
+    <title>My To-Do List App</title>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.2/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js"></script>
+</head>
+<body class="container" ng-app="todoApp">
+    <style>
+        .overline {
+            text-decoration: line-through;
+        }
+    </style>
+    <div>
+        <br />
+    </div>
+    <div ng-init="init()" class="col-md-12" ng-controller="todoCtrl">
+        <h4>My To-Do List</h4>
+        <div class="list-group">
+            <a href="javascript:;" class="list-group-item" ng-repeat="todo in List">
+                <div class="input-group">
+                    <span class="input-group-addon" id="basic-addon1" ng-click="Update(todo)">
+                        <input type="text" ng-if="todo.Modified" ng-model="todo.Modified | mydate | date: 'yyyy-MM-dd HH:mm'" ng-disabled="makeOverline"/>&nbsp;<i class="fa fa-save"></i>
+                    </span>
+                    <span class="input-group-addon" id="basic-addon1">
+                        <input type="checkbox" ng-click="Update(todo)" ng-model="makeOverline" />
+                    </span>
+                    <input ng-class="{overline : makeOverline}" ng-model="todo.Text" class="form-control" ng-disabled="makeOverline"/>
+                </div>
+            </a>
+            <form ng-submit="Add()">
+                <div class="input-group">
+                    <span class="input-group-addon" id="basic-addon1">&nbsp;<i class="fa fa-save"></i></span>
+                    <span class="input-group-addon" id="basic-addon1"><i class="fa fa-check-square-o"></i></span>
+                    <input type="text" ng-model="NewTodoText" class="form-control" placeholder="Todo ">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var pageList = {
+            list: "@Url.Action("List","Todo")",
+            add: "@Url.Action("Add","Todo")",
+            remove: "@Url.Action("Delete","Todo")",
+            edit: "@Url.Action("Update","Todo")"
+        }
+        angular.module("todoApp", [])
+            .filter("mydate", function () {
+                var re = /\/Date\(([0-9]*)\)\//;
+                return function (x) {
+                    var m = x.match(re);
+                    if (m) return new Date(parseInt(m[1]));
+                    else return null;
+                };
+            })
+
+            .controller("todoCtrl",
+                function ($scope, $http) {
+                    $scope.List = [];
+                    $scope.NewTodoText = "";
+
+                    $scope.MakeOverline = function () {
+                        if ($scope.classOverline.length == 0) {
+                            $scope.classOverline = 'overline';
+                        } else {
+                            $scope.classOverline = '';
+                        };
+                    }
+                   
+                    //UPDATE
+                    $scope.Update = function (todo) {
+                        $http.post(pageList.edit, {
+                            Text: todo.Text,
+                            Id: todo.Id
+                        }).then(function (res) {
+                            var jsonResult = res.data;
+                            if (jsonResult.IsSuccess) {
+                                todo.Modified = jsonResult.Data.Modified;
+                            } else {
+                                alert(todo.Message);
+                            }
+                        });
+                    }
+
+                    //ADD
+                    $scope.Add = function () {
+                        $http.post(pageList.add,
+                        {
+                            Text: $scope.NewTodoText
+                        }).then(function (res) {
+                            var jsonResult = res.data;
+                            if (jsonResult.IsSuccess) {
+                                res.Modified = jsonResult.Data.Modified
+                                $scope.List.push(jsonResult.Data);
+                                $scope.NewTodoText = "";
+                            } else {
+                                alert(todo.Message);
+                            }
+
+                        });
+                    }
+
+                    ////DELETE
+                    //$scope.Delete = function (todo, index) {
+                    //    $scope.MakeUnderline = function () {
+                    //        if ($scope.classUnderline.length == 0) {
+                    //            $scope.classUnderline = 'underline';
+                    //        } else {
+                    //            $scope.classUnderline = '';
+                    //        }
+                    //    };
+                    //    $http.post(pageList.remove, { Id: todo.Id })
+                    //        .then(function (res) {
+                    //            var jsonResult = res.data;
+                    //            if (jsonResult.IsSuccess) {
+                    //                $scope.List.splice(index, 1);
+                    //            } else {
+                    //                alert(todo.Message);
+                    //            }
+
+                    //        });
+                    //}
+
+                    //INIT
+                    $scope.init = function () {
+                        $http.get(pageList.list, {}).then(function (res) {
+                            var jsonResult = res.data;
+                            if (jsonResult.IsSuccess) {
+                                $scope.List = jsonResult.Data;
+                            } else {
+                                alert(jsonResult.Mesage)
+                            }
+                        });
+                    }
+                });
+    </script>
+</body>
+</html>
